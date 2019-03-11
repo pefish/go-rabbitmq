@@ -8,6 +8,12 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1 h1:mweAR1A6xJ3oS2pRaGiHgQ4OO8tzTaLawm8vnODuwDk=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
+github.com/pefish/go-application v0.0.2 h1:8rezZUCiqW2f9gEkV0A1ZVLi8qER0yPHuxV1C6FJ6t4=
+github.com/pefish/go-application v0.0.2/go.mod h1:bIM667i1fBpkJxZWE0lTbYs/FW4O9YgnW5gj4sy33ko=
+github.com/pefish/go-logger v0.0.2 h1:eN8GIawai4HiLet9qG1fYgBZj7MJaZ1h5PcaXj533nI=
+github.com/pefish/go-logger v0.0.2/go.mod h1:4FrzbL4ww9yLL/E4dxv3d/TORXgaj7mkx0VJkRWvx4U=
+github.com/pefish/go-reflect v0.0.1 h1:5IyuKC2ChCFuJee1gl4dQkDfsrHRUR6knfwuz8xbhks=
+github.com/pefish/go-reflect v0.0.1/go.mod h1:lv3gz/Zh2FsqCq8jqzdCgYpoM41AjE90HtknRbkXhjQ=
 github.com/pefish/log4go v1.0.7 h1:CB0X19K4JMfgiYQxRr+erLQ/UCySOovix6ggAUU8nwo=
 github.com/pefish/log4go v1.0.7/go.mod h1:KL8EqYldvXxpBlUSZgR2H4tjBvVqiWgQtMg56LiZetY=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=

@@ -2,8 +2,8 @@ package p_rabbitmq
 
 import (
 	"fmt"
-	"gitee.com/pefish/p-go-application"
-	"gitee.com/pefish/p-go-logger"
+	"github.com/pefish/go-application"
+	"github.com/pefish/go-logger"
 	"github.com/streadway/amqp"
 	"time"
 )
