@@ -37,6 +37,7 @@ func (this *RabbitmqClass) PublishDefault(quene string, data string) {
 	if err != nil {
 		panic(err)
 	}
+	defer c.Close()
 
 	q, err := c.QueueDeclare(
 		quene, // name
