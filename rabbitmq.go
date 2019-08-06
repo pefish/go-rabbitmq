@@ -5,7 +5,6 @@ import (
 	"github.com/pefish/go-application"
 	"github.com/pefish/go-logger"
 	"github.com/streadway/amqp"
-	"log"
 	"time"
 )
 
@@ -60,12 +59,11 @@ func (this *RabbitmqClass) Connect(username string, password string, host string
 	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq connect succeed. url: %s:%d`, host, port))
 }
 
-func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)) {
+func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)) *amqp.Channel {
 	c, err := this.Conn.Channel()
 	if err != nil {
 		panic(err)
 	}
-	defer c.Close()
 
 	q, err := c.QueueDeclare(
 		quene, // name
@@ -92,7 +90,6 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 		panic(err)
 	}
 
-	forever := make(chan bool)
 	go func() {
 		for d := range msgsChan {
 			if go_application.Application.Debug {
@@ -101,9 +98,8 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 			doFunc(string(d.Body))
 		}
 	}()
-
-	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-	<-forever
+	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq subscribe succeed. quene: %s`, quene))
+	return c
 }
 
 func (this *RabbitmqClass) PublishDefault(quene string, data string) {
