@@ -1,4 +1,4 @@
-package p_rabbitmq
+package go_rabbitmq
 
 import (
 	"testing"
