@@ -51,11 +51,13 @@ func (this *RabbitmqClass) ConnectWithConfiguration(configuration Configuration)
 }
 
 func (this *RabbitmqClass) Connect(username string, password string, host string, port uint64, vhost string) {
-	conn, err := amqp.Dial(fmt.Sprintf(`amqp://%s:%s@%s:%d/%s`, username, password, host, port, vhost))
+	url := fmt.Sprintf(`amqp://%s:%s@%s:%d/%s`, username, password, host, port, vhost)
+	conn, err := amqp.Dial(url)
 	if err != nil {
 		panic(err)
 	}
 	this.Conn = conn
+	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq connect succeed. url: %s`, url))
 }
 
 func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)) {
