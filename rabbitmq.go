@@ -57,7 +57,7 @@ func (this *RabbitmqClass) Connect(username string, password string, host string
 		panic(err)
 	}
 	this.Conn = conn
-	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq connect succeed. url: %s`, url))
+	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq connect succeed. url: %s:%d`, host, port))
 }
 
 func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)) {
