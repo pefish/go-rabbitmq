@@ -96,7 +96,7 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 	go func() {
 		for d := range msgsChan {
 			if go_application.Application.Debug {
-				go_logger.Logger.Debug(quene, string(d.Body))
+				go_logger.Logger.Debug(fmt.Sprintf(`rabbitmq consume; quene: %s, body: %s`, quene, string(d.Body)))
 			}
 			doFunc(string(d.Body))
 		}
@@ -108,7 +108,7 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 
 func (this *RabbitmqClass) PublishDefault(quene string, data string) {
 	if go_application.Application.Debug {
-		go_logger.Logger.Debug(quene, data)
+		go_logger.Logger.Debug(fmt.Sprintf(`rabbitmq publish; quene: %s, body: %s`, quene, data))
 	}
 
 	c, err := this.Conn.Channel()
