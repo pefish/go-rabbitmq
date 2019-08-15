@@ -11,7 +11,7 @@ func main() {
 		Username: `guest`,
 		Password: `guest`,
 	})
-	for i := 0; i < 500; i++ {
-		go_rabbitmq.RabbitmqHelper.PublishDefault(`test`, strconv.FormatInt(int64(i), 10))
+	for i := 0; i < 5; i++ {
+		go_rabbitmq.RabbitmqHelper.PublishDefault(`test1`, strconv.FormatInt(int64(i), 10))
 	}
 }

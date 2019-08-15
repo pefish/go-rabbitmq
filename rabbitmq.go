@@ -2,7 +2,6 @@ package go_rabbitmq
 
 import (
 	"fmt"
-	"github.com/pefish/go-application"
 	"github.com/pefish/go-logger"
 	"github.com/streadway/amqp"
 	"time"
@@ -26,7 +25,7 @@ func (this *RabbitmqClass) ConnectWithMap(map_ map[string]interface{}) {
 		port = map_[`port`].(uint64)
 	}
 
-	var vhost string = ``
+	var vhost = ``
 	if map_[`vhost`] != nil {
 		vhost = map_[`vhost`].(string)
 	}
@@ -82,7 +81,7 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 		"",     // consumer
 		true,   // auto-ack
 		false,  // exclusive
-		false,  // no-local
+		false,  // no-local 不支持的参数
 		false,  // no-wait
 		nil,    // args
 	)
@@ -92,9 +91,7 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 
 	go func() {
 		for d := range msgsChan {
-			if go_application.Application.Debug {
-				go_logger.Logger.Debug(fmt.Sprintf(`rabbitmq consume; quene: %s, body: %s`, quene, string(d.Body)))
-			}
+			go_logger.Logger.Info(fmt.Sprintf(`rabbitmq consume; quene: %s, body: %s`, quene, string(d.Body)))
 			doFunc(string(d.Body))
 		}
 	}()
@@ -102,20 +99,52 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 	return c
 }
 
-func (this *RabbitmqClass) PublishDefault(quene string, data string) {
-	if go_application.Application.Debug {
-		go_logger.Logger.Debug(fmt.Sprintf(`rabbitmq publish; quene: %s, body: %s`, quene, data))
-	}
-
+func (this *RabbitmqClass) NewChannel() *amqp.Channel {
 	c, err := this.Conn.Channel()
 	if err != nil {
 		panic(err)
 	}
+	return c
+}
+
+//func (this *RabbitmqClass) DeclareQueneWithDeadLetter(c amqp.Channel) {
+//	q, err := c.QueueDeclare(`dead_letter_quene`, true, false, false, false, amqp.Table{
+//		`x-dead-letter-exchange`: `dead_letter_exchange`,
+//		`x-dead-letter-routing-key`: `dead_letter_routing_key`,
+//		`x-message-ttl`: int32(5000),
+//	})
+//	if err != nil {
+//		panic(err)
+//	}
+//}
+
+func (this *RabbitmqClass) DeclareDeadLetterQuene(c amqp.Channel) (string, string) {
+	exchangeName := `dead_letter_exchange`
+	queneName := `dead_letter_quene`
+	err := c.ExchangeDeclare(exchangeName, `direct`, true, false, false, false, nil)
+	if err != nil {
+		panic(err)
+	}
+	deadLetterQ, err := c.QueueDeclare(queneName, true, false, false, false, nil)
+	if err != nil {
+		panic(err)
+	}
+	err = c.QueueBind(deadLetterQ.Name, `dead_letter_routing_key`, exchangeName, false, nil)
+	if err != nil {
+		panic(err)
+	}
+	return exchangeName, queneName
+}
+
+func (this *RabbitmqClass) PublishDefault(quene string, data string) {
+	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq publish; quene: %s, body: %s`, quene, data))
+
+	c := this.NewChannel()
 	defer c.Close()
 
 	q, err := c.QueueDeclare(
 		quene, // name
-		true,  // durable
+		true,  // durable 队列持久化
 		false, // delete when unused
 		false, // exclusive
 		false, // no-wait
@@ -126,7 +155,7 @@ func (this *RabbitmqClass) PublishDefault(quene string, data string) {
 	}
 
 	msg := amqp.Publishing{
-		DeliveryMode: amqp.Persistent,
+		DeliveryMode: amqp.Persistent, // 消息持久化
 		Timestamp:    time.Now(),
 		ContentType:  "text/plain",
 		Body:         []byte(data),

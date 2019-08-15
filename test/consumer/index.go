@@ -15,7 +15,7 @@ func main() {
 		Username: `guest`,
 		Password: `guest`,
 	})
-	c := go_rabbitmq.RabbitmqHelper.ConsumeDefault(`test`, func(data string) {
+	c := go_rabbitmq.RabbitmqHelper.ConsumeDefault(`testquene`, func(data string) {
 		log.Printf("Received a message: %s", data)
 	})
 	defer func() {
