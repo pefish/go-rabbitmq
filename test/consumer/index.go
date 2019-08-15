@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/pefish/go-rabbitmq"
 	"log"
+	"time"
 )
 
 func main() {
@@ -15,8 +16,9 @@ func main() {
 		Username: `guest`,
 		Password: `guest`,
 	})
-	c := go_rabbitmq.RabbitmqHelper.ConsumeDefault(`testquene`, func(data string) {
+	c := go_rabbitmq.RabbitmqHelper.ConsumeDefault(`test1`, func(data string) {
 		log.Printf("Received a message: %s", data)
+		time.Sleep(10 * time.Second)
 	})
 	defer func() {
 		c.Close()

@@ -59,10 +59,7 @@ func (this *RabbitmqClass) Connect(username string, password string, host string
 }
 
 func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)) *amqp.Channel {
-	c, err := this.Conn.Channel()
-	if err != nil {
-		panic(err)
-	}
+	c := this.NewChannel()
 
 	q, err := c.QueueDeclare(
 		quene, // name
@@ -79,7 +76,7 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 	msgsChan, err := c.Consume(
 		q.Name, // queue
 		"",     // consumer
-		true,   // auto-ack
+		false,   // auto-ack
 		false,  // exclusive
 		false,  // no-local 不支持的参数
 		false,  // no-wait
@@ -90,9 +87,27 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 	}
 
 	go func() {
-		for d := range msgsChan {
+		tempFun := func(d amqp.Delivery) {
+			defer func() {
+				if err := recover(); err != nil {
+					go_logger.Logger.Error(err)
+					err := d.Reject(false)
+					if err != nil {
+						panic(err)
+					}
+				} else {
+					err := d.Ack(false)
+					if err != nil {
+						panic(err)
+					}
+				}
+			}()
 			go_logger.Logger.Info(fmt.Sprintf(`rabbitmq consume; quene: %s, body: %s`, quene, string(d.Body)))
 			doFunc(string(d.Body))
+		}
+
+		for d := range msgsChan {
+			tempFun(d)
 		}
 	}()
 	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq subscribe succeed. quene: %s`, quene))
@@ -101,6 +116,10 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 
 func (this *RabbitmqClass) NewChannel() *amqp.Channel {
 	c, err := this.Conn.Channel()
+	if err != nil {
+		panic(err)
+	}
+	err = c.Qos(1, 0, true) // 此通道上的消息只能一个个被消费（多个消费者的情况下）。前一个消息没有ack，后一个消息等待. auto-ack为false才生效
 	if err != nil {
 		panic(err)
 	}
