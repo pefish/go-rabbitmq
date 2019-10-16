@@ -22,7 +22,7 @@ func (this *RabbitmqClass) Close() {
 func (this *RabbitmqClass) ConnectWithMap(map_ map[string]interface{}) error {
 	var port uint64 = 5672
 	if map_[`port`] != nil {
-		port = map_[`port`].(uint64)
+		port = uint64(map_[`port`].(float64))
 	}
 
 	var vhost = ``
