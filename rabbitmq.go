@@ -19,7 +19,7 @@ func (this *RabbitmqClass) Close() {
 	}
 }
 
-func (this *RabbitmqClass) ConnectWithMap(map_ map[string]interface{}) {
+func (this *RabbitmqClass) ConnectWithMap(map_ map[string]interface{}) error {
 	var port uint64 = 5672
 	if map_[`port`] != nil {
 		port = map_[`port`].(uint64)
@@ -29,7 +29,18 @@ func (this *RabbitmqClass) ConnectWithMap(map_ map[string]interface{}) {
 	if map_[`vhost`] != nil {
 		vhost = map_[`vhost`].(string)
 	}
-	this.Connect(map_[`username`].(string), map_[`password`].(string), map_[`host`].(string), port, vhost)
+	err := this.Connect(map_[`username`].(string), map_[`password`].(string), map_[`host`].(string), port, vhost)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (this *RabbitmqClass) MustConnectWithMap(map_ map[string]interface{}) {
+	err := this.ConnectWithMap(map_)
+	if err != nil {
+		panic(err)
+	}
 }
 
 type Configuration struct {
@@ -40,26 +51,56 @@ type Configuration struct {
 	Vhost    string
 }
 
-func (this *RabbitmqClass) ConnectWithConfiguration(configuration Configuration) {
+func (this *RabbitmqClass) ConnectWithConfiguration(configuration Configuration) error {
 	var port uint64 = 5672
 	if configuration.Port != 0 {
 		port = configuration.Port
 	}
-	this.Connect(configuration.Username, configuration.Password, configuration.Host, port, configuration.Vhost)
+	err := this.Connect(configuration.Username, configuration.Password, configuration.Host, port, configuration.Vhost)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (this *RabbitmqClass) Connect(username string, password string, host string, port uint64, vhost string) {
-	url := fmt.Sprintf(`amqp://%s:%s@%s:%d/%s`, username, password, host, port, vhost)
-	conn, err := amqp.Dial(url)
+func (this *RabbitmqClass) MustConnectWithConfiguration(configuration Configuration) {
+	err := this.ConnectWithConfiguration(configuration)
 	if err != nil {
 		panic(err)
 	}
-	this.Conn = conn
-	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq connect succeed. url: %s:%d`, host, port))
 }
 
-func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)) *amqp.Channel {
-	c := this.NewChannel()
+func (this *RabbitmqClass) Connect(username string, password string, host string, port uint64, vhost string) error {
+	url := fmt.Sprintf(`amqp://%s:%s@%s:%d/%s`, username, password, host, port, vhost)
+	conn, err := amqp.Dial(url)
+	if err != nil {
+		return err
+	}
+	this.Conn = conn
+	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq connect succeed. url: %s:%d`, host, port))
+	return nil
+}
+
+func (this *RabbitmqClass) MustConnect(username string, password string, host string, port uint64, vhost string) {
+	err := this.Connect(username, password, host, port, vhost)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (this *RabbitmqClass) MustConsumeDefault(quene string, doFunc func(data string)) *amqp.Channel {
+	c, err := this.ConsumeDefault(quene, doFunc)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
+func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)) (*amqp.Channel, error) {
+	c, err := this.NewChannel()
+	if err != nil {
+		return nil, err
+	}
 
 	q, err := c.QueueDeclare(
 		quene, // name
@@ -70,20 +111,20 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 		nil,   // arguments
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	msgsChan, err := c.Consume(
 		q.Name, // queue
 		"",     // consumer
-		false,   // auto-ack
+		false,  // auto-ack
 		false,  // exclusive
 		false,  // no-local 不支持的参数
 		false,  // no-wait
 		nil,    // args
 	)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	go func() {
@@ -111,15 +152,23 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 		}
 	}()
 	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq subscribe succeed. quene: %s`, quene))
-	return c
+	return c, nil
 }
 
-func (this *RabbitmqClass) NewChannel() *amqp.Channel {
+func (this *RabbitmqClass) NewChannel() (*amqp.Channel, error) {
 	c, err := this.Conn.Channel()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	err = c.Qos(1, 0, true) // 此通道上的消息只能一个个被消费（多个消费者的情况下）。前一个消息没有ack，后一个消息等待. auto-ack为false才生效
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (this *RabbitmqClass) MustNewChannel() *amqp.Channel {
+	c, err := this.NewChannel()
 	if err != nil {
 		panic(err)
 	}
@@ -137,28 +186,39 @@ func (this *RabbitmqClass) NewChannel() *amqp.Channel {
 //	}
 //}
 
-func (this *RabbitmqClass) DeclareDeadLetterQuene(c amqp.Channel) (string, string) {
+func (this *RabbitmqClass) DeclareDeadLetterQuene(c amqp.Channel) (string, string, error) {
 	exchangeName := `dead_letter_exchange`
 	queneName := `dead_letter_quene`
 	err := c.ExchangeDeclare(exchangeName, `direct`, true, false, false, false, nil)
 	if err != nil {
-		panic(err)
+		return ``, ``, err
 	}
 	deadLetterQ, err := c.QueueDeclare(queneName, true, false, false, false, nil)
 	if err != nil {
-		panic(err)
+		return ``, ``, err
 	}
 	err = c.QueueBind(deadLetterQ.Name, `dead_letter_routing_key`, exchangeName, false, nil)
+	if err != nil {
+		return ``, ``, err
+	}
+	return exchangeName, queneName, nil
+}
+
+func (this *RabbitmqClass) MustDeclareDeadLetterQuene(c amqp.Channel) (string, string) {
+	exchangeName, queneName, err := this.DeclareDeadLetterQuene(c)
 	if err != nil {
 		panic(err)
 	}
 	return exchangeName, queneName
 }
 
-func (this *RabbitmqClass) PublishDefault(quene string, data string) {
+func (this *RabbitmqClass) PublishDefault(quene string, data string) error {
 	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq publish; quene: %s, body: %s`, quene, data))
 
-	c := this.NewChannel()
+	c, err := this.NewChannel()
+	if err != nil {
+		return err
+	}
 	defer c.Close()
 
 	q, err := c.QueueDeclare(
@@ -170,7 +230,7 @@ func (this *RabbitmqClass) PublishDefault(quene string, data string) {
 		nil,   // arguments
 	)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	msg := amqp.Publishing{
@@ -180,6 +240,14 @@ func (this *RabbitmqClass) PublishDefault(quene string, data string) {
 		Body:         []byte(data),
 	}
 	err = c.Publish("", q.Name, false, false, msg)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (this *RabbitmqClass) MustPublishDefault(quene string, data string) {
+	err := this.PublishDefault(quene, data)
 	if err != nil {
 		panic(err)
 	}
