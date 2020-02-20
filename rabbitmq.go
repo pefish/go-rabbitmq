@@ -8,10 +8,16 @@ import (
 )
 
 type RabbitmqClass struct {
-	Conn *amqp.Connection
+	Conn   *amqp.Connection
+	logger go_logger.InterfaceLogger
 }
 
 var RabbitmqHelper = RabbitmqClass{}
+
+func (this *RabbitmqClass) SetLogger(logger go_logger.InterfaceLogger) *RabbitmqClass {
+	this.logger = logger
+	return this
+}
 
 func (this *RabbitmqClass) Close() {
 	if this.Conn != nil {
@@ -77,7 +83,7 @@ func (this *RabbitmqClass) Connect(username string, password string, host string
 		return err
 	}
 	this.Conn = conn
-	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq connect succeed. url: %s:%d`, host, port))
+	this.logger.Info(fmt.Sprintf(`rabbitmq connect succeed. url: %s:%d`, host, port))
 	return nil
 }
 
@@ -131,7 +137,7 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 		tempFun := func(d amqp.Delivery) {
 			defer func() {
 				if err := recover(); err != nil {
-					go_logger.Logger.Error(err)
+					this.logger.Error(err)
 					err := d.Reject(false)
 					if err != nil {
 						panic(err)
@@ -143,7 +149,7 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 					}
 				}
 			}()
-			go_logger.Logger.Info(fmt.Sprintf(`rabbitmq consume; quene: %s, body: %s`, quene, string(d.Body)))
+			this.logger.DebugF(`rabbitmq consume; quene: %s, body: %s`, quene, string(d.Body))
 			doFunc(string(d.Body))
 		}
 
@@ -151,7 +157,7 @@ func (this *RabbitmqClass) ConsumeDefault(quene string, doFunc func(data string)
 			tempFun(d)
 		}
 	}()
-	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq subscribe succeed. quene: %s`, quene))
+	this.logger.InfoF(`rabbitmq subscribe succeed. quene: %s`, quene)
 	return c, nil
 }
 
@@ -213,7 +219,7 @@ func (this *RabbitmqClass) MustDeclareDeadLetterQuene(c amqp.Channel) (string, s
 }
 
 func (this *RabbitmqClass) PublishDefault(quene string, data string) error {
-	go_logger.Logger.Info(fmt.Sprintf(`rabbitmq publish; quene: %s, body: %s`, quene, data))
+	this.logger.DebugF(`rabbitmq publish; quene: %s, body: %s`, quene, data)
 
 	c, err := this.NewChannel()
 	if err != nil {

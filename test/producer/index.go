@@ -1,30 +1,27 @@
 package main
 
 import (
-	"fmt"
-	"os"
+	"github.com/pefish/go-logger"
+	"github.com/pefish/go-rabbitmq"
+	"strconv"
 	"time"
 )
 
 func main() {
-
-	//go_rabbitmq.RabbitmqHelper.MustConnectWithConfiguration(go_rabbitmq.Configuration{
-	//	Host: `localhost`,
-	//	Username: `guest`,
-	//	Password: `guest`,
-	//})
-	//for i := 0; i < 1000; i++ {
-	//	time.Sleep(3 * time.Second)
-	//	go_rabbitmq.RabbitmqHelper.MustPublishDefault(`test1`, strconv.FormatInt(int64(i), 10))
-	//}
-	go test()
+	go_logger.Logger.Init(`test`, ``)
+	go_rabbitmq.RabbitmqHelper.SetLogger(go_logger.Logger).MustConnectWithConfiguration(go_rabbitmq.Configuration{
+		Host: `localhost`,
+		Username: `guest`,
+		Password: `guest`,
+	})
+	i := 0
 	for {
-		time.Sleep(2 * time.Second)
-		fmt.Println(11)
+		time.Sleep(1000 * time.Millisecond)
+		i++
+		if i >= 10 {
+			break
+		}
+		go_rabbitmq.RabbitmqHelper.MustPublishDefault(`test_queue`, strconv.FormatInt(int64(i), 10))
 	}
 }
 
-func test() error {
-	os.Exit(1)
-	return nil
-}
