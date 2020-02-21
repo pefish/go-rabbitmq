@@ -84,6 +84,19 @@ func (this *RabbitmqClass) Connect(username string, password string, host string
 	}
 	this.Conn = conn
 	this.logger.Info(fmt.Sprintf(`rabbitmq connect succeed. url: %s:%d`, host, port))
+	// mq重连
+	go func() {
+		for {
+			if this.Conn.IsClosed() {
+				this.logger.Info(`rabbitmq 重连中...`)
+				err := this.Connect(username, password, host, port, vhost)
+				if err != nil {
+					this.logger.Error(err)
+				}
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}()
 	return nil
 }
 
