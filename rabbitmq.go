@@ -2,19 +2,19 @@ package go_rabbitmq
 
 import (
 	"fmt"
-	"github.com/pefish/go-logger"
+	"github.com/pefish/go-interface-logger"
 	"github.com/streadway/amqp"
 	"time"
 )
 
 type RabbitmqClass struct {
 	Conn   *amqp.Connection
-	logger go_logger.InterfaceLogger
+	logger go_interface_logger.InterfaceLogger
 }
 
 var RabbitmqHelper = RabbitmqClass{}
 
-func (this *RabbitmqClass) SetLogger(logger go_logger.InterfaceLogger) *RabbitmqClass {
+func (this *RabbitmqClass) SetLogger(logger go_interface_logger.InterfaceLogger) *RabbitmqClass {
 	this.logger = logger
 	return this
 }
