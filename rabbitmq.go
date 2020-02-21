@@ -23,6 +23,7 @@ func (this *RabbitmqClass) Close() {
 	if this.Conn != nil {
 		this.Conn.Close()
 	}
+	this.logger.Info(`rabbitmq close succeed.`)
 }
 
 func (this *RabbitmqClass) ConnectWithMap(map_ map[string]interface{}) error {
@@ -88,7 +89,7 @@ func (this *RabbitmqClass) Connect(username string, password string, host string
 	go func() {
 		for {
 			if this.Conn.IsClosed() {
-				this.logger.Info(`rabbitmq 重连中...`)
+				this.logger.Info(`rabbitmq reconnecting...`)
 				err := this.Connect(username, password, host, port, vhost)
 				if err != nil {
 					this.logger.Error(err)
